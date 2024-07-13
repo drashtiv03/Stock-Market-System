@@ -1,0 +1,398 @@
+import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableCellRenderer;
+
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.List;
+
+public class StockMarketSystem {
+    private static DefaultTableModel stockTableModel;
+    private static DefaultTableModel userStockTableModel;
+
+    private static double totalAmount = 0.0;
+    private static double userBalance = 10000.0;
+    private static List<UserStock> userStocks = new ArrayList<>();
+
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("Stock Market System");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+      
+
+        JTabbedPane tabbedPane = new JTabbedPane();
+        JPanel stockPanel = createStockPanel();
+        JPanel buySellPanel = createBuySellPanel();
+      JPanel newsPanel = createNewsPanel();
+        JPanel indicesPanel = createIndicesPanel();
+
+        tabbedPane.addTab("Stocks", stockPanel);
+        tabbedPane.addTab("Buy/Sell", buySellPanel);
+        tabbedPane.addTab("News", newsPanel);
+        tabbedPane.addTab("Indices", indicesPanel);
+        tabbedPane.setBackground(Color.blue);
+        tabbedPane.setForeground(Color.white);
+        Font font = new Font("Arial", Font.CENTER_BASELINE, 20);
+        tabbedPane.setFont(font);
+       /*  JLabel lab = new JLabel();
+ lab.setPreferredSize(new Dimension(500, 30));
+ JTabbedPane.setTabComponentAt(0, lab);
+ JLabel lab1 = new JLabel();
+ lab.setPreferredSize(new Dimension(500, 30));
+ jTabbedPane.setTabComponentAt(1, lab1);
+ JLabel lab2 = new JLabel();
+ lab.setPreferredSize(new Dimension(500, 30));
+ jTabbedPane.setTabComponentAt(2, lab2);
+ JLabel lab3 = new JLabel();
+ lab.setPreferredSize(new Dimension(500, 30));
+ jTabbedPane.setTabComponentAt(3, lab3);*/
+
+ frame.add(tabbedPane);
+ frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+ frame.setSize(1000,550);
+ frame.setVisible(true);
+    }
+
+    private static JPanel createStockPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+
+        String[] columnNames = {"Stock Name", "Price (Rs.)", "Change in %(rise/fall)"};
+        Object[][] data = {
+            {"Zydus life", 625, 4.67},
+            {"Ashok Leyland", 173.55,2.84},
+            {"Tvs motor", 1646.95, 2.26},
+            {"BHEL", 125.30, -2.93},
+            {"ICICI Prudentia", 530.6, -1.36},
+            {"Infosys", 1391, - 0.95},
+            {"L&T Finance", 140.95, -0.63},
+            {"IRCTC", 676.90, -0.62},
+            {"Cipla", 1241, 24.55},
+            {"Torrent pharma", 2028.10, +1.49}
+           
+        };
+ stockTableModel = new DefaultTableModel(data, columnNames);
+    JTable stockTable = new JTable(stockTableModel);
+    
+    // Create custom renderer for the "Change" column
+    TableCellRenderer changeRenderer = new ChangeCellRenderer();
+    stockTable.getColumnModel().getColumn(2).setCellRenderer(changeRenderer);
+ stockTable.setBackground(Color.white);
+      stockTable.setForeground(Color.blue);
+        JTableHeader tableHeader = stockTable.getTableHeader();
+        Font headerFont = new Font("Arial", Font.BOLD,20);
+        tableHeader.setFont(headerFont);
+        JScrollPane scrollPane = new JScrollPane(stockTable);
+        panel.add(scrollPane, BorderLayout.CENTER);
+   
+    return panel;
+}
+
+// Custom renderer for the "Change" column
+private static class ChangeCellRenderer extends DefaultTableCellRenderer {
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        Component renderer = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        double change = (double) value;
+        
+        if (change > 0) {
+            // Positive change, display in green with a green triangle
+            renderer.setForeground(Color.GREEN);
+           // renderer.setIcon(new ImageIcon(new ImageIcon("C:\\Users\\a\\Downloads\\green triangle").getImage().getScaledInstance(12, 12, Image.SCALE_DEFAULT)));
+        } else if (change < 0) {
+            // Negative change, display in red with a red triangle
+            renderer.setForeground(Color.RED);
+           // renderer.setIcon(new ImageIcon(new ImageIcon("C:\\Users\\a\\Downloads\\red-triangle-pointed-down").getImage().getScaledInstance(12, 12, Image.SCALE_DEFAULT)));
+        } else {
+            // No change, use the default color and no icon
+            renderer.setForeground(table.getForeground());
+            //renderer.setIcon(null);
+        }
+        
+        return renderer;
+    }
+}
+     
+
+       
+
+   
+
+    private static JPanel createBuySellPanel() {
+        JPanel panel = new JPanel(new GridLayout(4, 2));
+        JLabel stockLabel = new JLabel("Select Stock:");
+        JComboBox<String> stockComboBox = new JComboBox<>();
+       
+        for (int row = 0; row < stockTableModel.getRowCount(); row++) {
+            stockComboBox.addItem((String) stockTableModel.getValueAt(row, 0));
+        }
+
+        JLabel quantityLabel = new JLabel("Enter Quantity:");
+        JTextField quantityField = new JTextField();
+        JLabel actionLabel = new JLabel("Action (Buy/Sell):");
+        JComboBox<String> actionComboBox = new JComboBox<>(new String[] {"Buy", "Sell"});
+        JButton executeButton = new JButton("Execute");
+        JButton currentStatusButton = new JButton("Current Status");
+
+        panel.add(stockLabel);
+        panel.add(stockComboBox);
+        panel.add(quantityLabel);
+        panel.add(quantityField);
+        panel.add(actionLabel);
+        panel.add(actionComboBox);
+        panel.add(currentStatusButton);
+        panel.add(executeButton);
+      
+        executeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String selectedStock = (String) stockComboBox.getSelectedItem();
+                int quantity = Integer.parseInt(quantityField.getText());
+                String action = (String) actionComboBox.getSelectedItem();
+
+                if (action.equals("Buy")) {
+                    buyStock(selectedStock, quantity);
+                } else if (action.equals("Sell")) {
+                    sellStock(selectedStock, quantity);
+                }
+            }
+        });
+
+        currentStatusButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showCurrentStatus();
+            }
+        });
+
+        return panel;
+    }
+
+    private static void createUserStockTableModel() {
+        if (userStockTableModel == null) {
+            String[] columnNames = {"Stock Name", "Quantity", "Action","Stock price"};
+            userStockTableModel = new DefaultTableModel(null, columnNames);
+        }
+    }
+
+    private static void buyStock(String stockName, int quantity) {
+        int row = findStockRowIndex(stockName);
+        if (row == -1) {
+         
+            return;
+        }
+
+        double stockPrice = (double) stockTableModel.getValueAt(row, 1);
+        double totalPrice = stockPrice * quantity;
+
+        if (totalPrice <= getUserBalance()) {
+            // Update the user's stock data
+            int userRow = findUserStockRowIndex(stockName);
+            if (userRow == -1) {
+                userStocks.add(new UserStock(stockName, quantity, "Buy", stockPrice));
+            } else {
+                int currentQuantity = userStocks.get(userRow).getQuantity();
+                userStocks.get(userRow).setQuantity(currentQuantity + quantity);
+            }
+            updateUserBalance(getUserBalance() - totalPrice);
+            totalAmount += totalPrice;
+
+            userStockTableModel.setValueAt((double) userStockTableModel.getValueAt(row, 1) *quantity, row, 1);
+
+            showCurrentStatus();
+        } else {
+            JOptionPane.showMessageDialog(null, "Insufficient balance to buy this stock.");
+        }
+    }
+
+    
+    private static void sellStock(String stockName, int quantity) {
+        int userRow = findUserStockRowIndex(stockName);
+        if (userRow == -1) {
+            JOptionPane.showMessageDialog(null, "You don't have any of this stock to sell.");
+            return;
+        }
+
+        int currentQuantity = userStocks.get(userRow).getQuantity();
+
+        if (currentQuantity >= quantity) {
+            
+            userStocks.get(userRow).setQuantity(currentQuantity - quantity);
+
+            
+            double stockPrice = (double) stockTableModel.getValueAt(findStockRowIndex(stockName), 1);
+            
+            updateUserBalance(getUserBalance() + stockPrice * quantity);
+totalAmount -= stockPrice * quantity;
+
+            userStockTableModel.setValueAt((double) userStockTableModel.getValueAt(findStockRowIndex(stockName), 1) + quantity, findStockRowIndex(stockName), 1);
+
+            showCurrentStatus();
+        } else {
+            JOptionPane.showMessageDialog(null, "You don't have enough of this stock to sell.");
+        }
+    }
+
+    private static void showCurrentStatus() {
+        createUserStockTableModel();
+        userStockTableModel.setRowCount(0); 
+        for (UserStock userStock : userStocks) {
+           
+            userStockTableModel.addRow(new Object[]{
+                userStock.getStockName(),
+                userStock.getQuantity(),
+                userStock.getAction(),
+                userStock.getStockPrice()  // Add stock price
+            });
+        }
+
+        JFrame statusFrame = new JFrame("Current Stock Status");
+        statusFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        statusFrame.setSize(400, 300);
+
+        JTable userStockTable = new JTable(userStockTableModel);
+         userStockTable.setBackground(Color.white);
+      userStockTable.setForeground(Color.blue);
+        JTableHeader tableHeader = userStockTable.getTableHeader();
+        Font headerFont = new Font("Arial", Font.BOLD,20);
+        tableHeader.setFont(headerFont);
+        JScrollPane scrollPane = new JScrollPane(userStockTable);
+       // panel.add(scrollPane, BorderLayout.CENTER);
+
+    
+       // JScrollPane scrollPane = new JScrollPane(userStockTable);
+        statusFrame.add(scrollPane);
+        JLabel totalAmountLabel = new JLabel("Total Stock Investment: Rs." + totalAmount+"   "+"User Balance: Rs." + userBalance);
+        totalAmountLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        statusFrame.add(totalAmountLabel,BorderLayout.SOUTH);
+        statusFrame.setVisible(true);
+       /*  JLabel userBalanceLabel = new JLabel("User Balance: Rs." + userBalance);
+        userBalanceLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        statusFrame.add(userBalanceLabel);
+        statusFrame.setVisible(true);*/
+    }
+
+   
+
+    
+
+    private static int findStockRowIndex(String stockName) {
+        for (int row = 0; row < stockTableModel.getRowCount(); row++) {
+            if (stockName.equalsIgnoreCase((String) stockTableModel.getValueAt(row, 0))) {
+                return row;
+            }
+        }
+        return -1; 
+    }
+
+    private static int findUserStockRowIndex(String stockName) {
+        for (int i = 0; i < userStocks.size(); i++) {
+            if (stockName.equalsIgnoreCase(userStocks.get(i).getStockName())) {
+                return i;
+            }
+        }
+        return -1; 
+    }
+
+    private static double getUserBalance() {
+        return userBalance;
+    }
+
+    private static void updateUserBalance(double newBalance) {
+        userBalance = newBalance;
+    }
+
+ 
+    public static class UserStock {
+        private String stockName;
+        private int quantity;
+        private String action;
+        private double stockPrice;
+
+        public UserStock(String stockName, int quantity, String action,double stockPrice) {
+            this.stockName = stockName;
+            this.quantity = quantity;
+            this.action = action;
+            this.stockPrice = stockPrice;
+        }
+
+        public String getStockName() {
+            return stockName;
+        }
+
+        public int getQuantity() {
+            return quantity;
+        }
+
+        public void setQuantity(int quantity) {
+            this.quantity = quantity;
+        }
+
+        public String getAction() {
+            return action;
+        }
+        public double getStockPrice() {
+            return stockPrice;
+        }
+    }
+    private static JPanel createNewsPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+    
+       
+        JLabel newsLabel1 = new JLabel("->Buy Zydus wellness; Target of Rs.1800.");
+        newsLabel1.setFont(new Font("Arial", Font.BOLD, 18));
+    
+        JLabel newsLabel2 = new JLabel("->Equity mutual funds get close to 20000 crore net inflow.");
+        newsLabel2.setFont(new Font("Arial", Font.BOLD, 18));
+    
+        JLabel newsLabel3 = new JLabel("->Shubh mahurat: went to buy gold this year.");
+        newsLabel3.setFont(new Font("Arial", Font.BOLD, 18));
+    
+        JLabel newsLabel4 = new JLabel("->Infosys preview: profit to jump on robust auto scales.");
+        newsLabel4.setFont(new Font("Arial", Font.BOLD, 18));
+    
+       
+        panel.add(newsLabel1);
+        panel.add(newsLabel2);
+        panel.add(newsLabel3);
+        panel.add(newsLabel4);
+    
+        return panel;
+    }
+    
+    
+
+    private static JPanel createIndicesPanel() {
+        JPanel panel = new JPanel(new GridLayout(2, 1));
+
+        JLabel niftyLabel = createIndexLabel("Nifty", 15300, false);
+        JLabel sensexLabel = createIndexLabel("Sensex", 53700, true);
+        panel.add(niftyLabel);
+        panel.add(sensexLabel);
+        JLabel label=new JLabel();
+        ImageIcon icon = new ImageIcon(new ImageIcon("NIFTY.png").getImage().getScaledInstance(20, 20, Image.SCALE_DEFAULT));
+    label.setIcon(icon);
+
+       //
+ // ImageIcon icon = new ImageIcon(new ImageIcon("NIFTY.png").getImage().getScaledInstance(200, 200, Image.SCALE_DEFAULT));
+   //     JLabel displayField=new JLabel(icon);
+     //   panel.add(displayField);
+        //panel.setVisible(true);
+        
+
+       
+        return panel;
+    }
+
+    private static JLabel createIndexLabel(String indexName, double value, boolean isLoss) {
+        JLabel label = new JLabel(indexName + ": " + value + "  ");
+        label.setFont(new Font("Arial", Font.BOLD, 18));
+        label.setForeground(isLoss ? Color.RED : Color.GREEN);
+      
+        return label;
+    }
+   
+}
